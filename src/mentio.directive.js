@@ -1,14 +1,15 @@
 'use strict';
 
 angular.module('mentio', [])
-    .directive('mentio', ['mentioUtil', '$document', '$compile', '$log', '$timeout',
-        function (mentioUtil, $document, $compile, $log, $timeout) {
+    .directive('mentio', ['mentioUtil', '$document', '$compile', '$log', '$timeout', '$parse',
+        function (mentioUtil, $document, $compile, $log, $timeout, $parse) {
         return {
             restrict: 'A',
             scope: {
                 macros: '=mentioMacros',
                 search: '&mentioSearch',
                 select: '&mentioSelect',
+                post: '&mentioSelectPost',
                 items: '=mentioItems',
                 typedTerm: '=mentioTypedTerm',
                 altId: '=mentioId',
@@ -79,7 +80,7 @@ angular.module('mentio', [])
                 $scope.replaceText = function (text, hasTrailingSpace) {
                     $scope.hideAll();
 
-                    mentioUtil.replaceTriggerText($scope.context(), $scope.targetElement, $scope.targetElementPath,
+                    var els = mentioUtil.replaceTriggerText($scope.context(), $scope.targetElement, $scope.targetElementPath,
                         $scope.targetElementSelectedOffset, $scope.triggerCharSet, text, $scope.requireLeadingSpace,
                         hasTrailingSpace);
 
@@ -96,6 +97,7 @@ angular.module('mentio', [])
                             });
                         }
                     }
+                    $scope.post({ $getElements: function () { return els } });
                 };
 
                 $scope.hideAll = function () {

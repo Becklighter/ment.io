@@ -117,10 +117,12 @@ angular.module('mentio')
             range.deleteContents();
 
             var el = getDocument(ctx).createElement('div');
-            el.innerHTML = html;
-            var frag = getDocument(ctx).createDocumentFragment(),
-                node, lastNode;
+	        el.innerHTML = html;
+	        var nodes = [];
+
+            var frag = getDocument(ctx).createDocumentFragment(), node, lastNode;
             while ((node = el.firstChild)) {
+            	nodes.push(node);
                 lastNode = frag.appendChild(node);
             }
             range.insertNode(frag);
@@ -133,6 +135,7 @@ angular.module('mentio')
                 sel.removeAllRanges();
                 sel.addRange(range);
             }
+	        return nodes;
         }
 
         function resetSelection (ctx, targetElement, path, offset) {
@@ -167,15 +170,13 @@ angular.module('mentio')
                     element.selectionStart = startPos + text.length;
                     element.selectionEnd = startPos + text.length;
                 } else {
-                    pasteHtml(ctx, text, macroMatchInfo.macroPosition,
-                            macroMatchInfo.macroPosition + macroMatchInfo.macroText.length);
+                    pasteHtml(ctx, text, macroMatchInfo.macroPosition, macroMatchInfo.macroPosition + macroMatchInfo.macroText.length);
                 }
             }
         }
 
         // public
-        function replaceTriggerText (ctx, targetElement, path, offset, triggerCharSet, 
-                text, requireLeadingSpace, hasTrailingSpace) {
+        function replaceTriggerText (ctx, targetElement, path, offset, triggerCharSet, text, requireLeadingSpace, hasTrailingSpace) {
             resetSelection(ctx, targetElement, path, offset);
 
             var mentionInfo = getTriggerInfo(ctx, triggerCharSet, requireLeadingSpace, true, hasTrailingSpace);
@@ -191,10 +192,9 @@ angular.module('mentio')
                     myField.selectionStart = startPos + text.length;
                     myField.selectionEnd = startPos + text.length;
                 } else {
-                    // add a space to the end of the pasted text
-                    text = text + '\xA0';
-                    pasteHtml(ctx, text, mentionInfo.mentionPosition,
-                            mentionInfo.mentionPosition + mentionInfo.mentionText.length + 1);
+                	// add a space to the end of the pasted text
+                	text = text + '\xA0';
+                    return pasteHtml(ctx, text, mentionInfo.mentionPosition, mentionInfo.mentionPosition + mentionInfo.mentionText.length + 1);
                 }
             }
         }

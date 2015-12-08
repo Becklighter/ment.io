@@ -1,14 +1,15 @@
 'use strict';
 
 angular.module('mentio', [])
-    .directive('mentio', ['mentioUtil', '$document', '$compile', '$log', '$timeout',
-        function (mentioUtil, $document, $compile, $log, $timeout) {
+    .directive('mentio', ['mentioUtil', '$document', '$compile', '$log', '$timeout', '$parse',
+        function (mentioUtil, $document, $compile, $log, $timeout, $parse) {
         return {
             restrict: 'A',
             scope: {
                 macros: '=mentioMacros',
                 search: '&mentioSearch',
                 select: '&mentioSelect',
+                post: '&mentioSelectPost',
                 items: '=mentioItems',
                 typedTerm: '=mentioTypedTerm',
                 altId: '=mentioId',
@@ -79,7 +80,7 @@ angular.module('mentio', [])
                 $scope.replaceText = function (text, hasTrailingSpace) {
                     $scope.hideAll();
 
-                    mentioUtil.replaceTriggerText($scope.context(), $scope.targetElement, $scope.targetElementPath,
+                    var els = mentioUtil.replaceTriggerText($scope.context(), $scope.targetElement, $scope.targetElementPath,
                         $scope.targetElementSelectedOffset, $scope.triggerCharSet, text, $scope.requireLeadingSpace,
                         hasTrailingSpace);
 
@@ -96,6 +97,7 @@ angular.module('mentio', [])
                             });
                         }
                     }
+                    $scope.post({ $getElements: function () { return els } });
                 };
 
                 $scope.hideAll = function () {
@@ -799,10 +801,12 @@ angular.module('mentio')
             range.deleteContents();
 
             var el = getDocument(ctx).createElement('div');
-            el.innerHTML = html;
-            var frag = getDocument(ctx).createDocumentFragment(),
-                node, lastNode;
+	        el.innerHTML = html;
+	        var nodes = [];
+
+            var frag = getDocument(ctx).createDocumentFragment(), node, lastNode;
             while ((node = el.firstChild)) {
+            	nodes.push(node);
                 lastNode = frag.appendChild(node);
             }
             range.insertNode(frag);
@@ -815,6 +819,7 @@ angular.module('mentio')
                 sel.removeAllRanges();
                 sel.addRange(range);
             }
+	        return nodes;
         }
 
         function resetSelection (ctx, targetElement, path, offset) {
@@ -849,15 +854,13 @@ angular.module('mentio')
                     element.selectionStart = startPos + text.length;
                     element.selectionEnd = startPos + text.length;
                 } else {
-                    pasteHtml(ctx, text, macroMatchInfo.macroPosition,
-                            macroMatchInfo.macroPosition + macroMatchInfo.macroText.length);
+                    pasteHtml(ctx, text, macroMatchInfo.macroPosition, macroMatchInfo.macroPosition + macroMatchInfo.macroText.length);
                 }
             }
         }
 
         // public
-        function replaceTriggerText (ctx, targetElement, path, offset, triggerCharSet, 
-                text, requireLeadingSpace, hasTrailingSpace) {
+        function replaceTriggerText (ctx, targetElement, path, offset, triggerCharSet, text, requireLeadingSpace, hasTrailingSpace) {
             resetSelection(ctx, targetElement, path, offset);
 
             var mentionInfo = getTriggerInfo(ctx, triggerCharSet, requireLeadingSpace, true, hasTrailingSpace);
@@ -873,10 +876,9 @@ angular.module('mentio')
                     myField.selectionStart = startPos + text.length;
                     myField.selectionEnd = startPos + text.length;
                 } else {
-                    // add a space to the end of the pasted text
-                    text = text + '\xA0';
-                    pasteHtml(ctx, text, mentionInfo.mentionPosition,
-                            mentionInfo.mentionPosition + mentionInfo.mentionText.length + 1);
+                	// add a space to the end of the pasted text
+                	text = text + '\xA0';
+                    return pasteHtml(ctx, text, mentionInfo.mentionPosition, mentionInfo.mentionPosition + mentionInfo.mentionText.length + 1);
                 }
             }
         }
@@ -1251,4 +1253,4 @@ angular.module('mentio')
         };
     }]);
 
-angular.module("mentio").run(["$templateCache", function($templateCache) {$templateCache.put("mentio-menu.tpl.html","<style>\n.scrollable-menu {\n    height: auto;\n    max-height: 300px;\n    overflow: auto;\n}\n\n.menu-highlighted {\n    font-weight: bold;\n}\n</style>\n<ul class=\"dropdown-menu scrollable-menu\" style=\"display:block\">\n    <li mentio-menu-item=\"item\" ng-repeat=\"item in items track by $index\">\n        <a class=\"text-primary\" ng-bind-html=\"item.label | mentioHighlight:typedTerm:\'menu-highlighted\' | unsafe\"></a>\n    </li>\n</ul>");}]);
+angular.module("mentio").run(["$templateCache", function($templateCache) {$templateCache.put("mentio-menu.tpl.html","<style>\r\n.scrollable-menu {\r\n    height: auto;\r\n    max-height: 300px;\r\n    overflow: auto;\r\n}\r\n\r\n.menu-highlighted {\r\n    font-weight: bold;\r\n}\r\n</style>\r\n<ul class=\"dropdown-menu scrollable-menu\" style=\"display:block\">\r\n    <li mentio-menu-item=\"item\" ng-repeat=\"item in items track by $index\">\r\n        <a class=\"text-primary\" ng-bind-html=\"item.label | mentioHighlight:typedTerm:\'menu-highlighted\' | unsafe\"></a>\r\n    </li>\r\n</ul>");}]);
